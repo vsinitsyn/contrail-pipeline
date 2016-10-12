@@ -5,6 +5,8 @@
  * Expected parameters:
  *   ARTIFACTORY_URL        Artifactory server location
  *   ARTIFACTORY_OUT_REPO   local repository name to upload image
+ *   DOCKER_REGISTRY_SERVER Docker server to use to push image
+ *   DOCKER_REGISTRY_SSL    Docker registry is SSL-enabled if true
  *   OS                     distribution name to build for (debian, ubuntu, etc.)
  *   DIST                   distribution version (jessie, trusty)
  *   ARCH                   comma-separated list of architectures to build
@@ -68,8 +70,8 @@ def inRepos = [
 
 def art = artifactory.connection(
     ARTIFACTORY_URL,
-    null,
-    false,
+    DOCKER_REGISTRY_SERVER,
+    DOCKER_REGISTRY_SSL ?: true,
     ARTIFACTORY_OUT_REPO
 )
 
@@ -132,13 +134,17 @@ node('docker') {
     try {
         stage("build") {
             def imgName = "${OS}-${DIST}-${ARCH}"
-            docker.build(
-                "${imgName}:${timestamp}",
-                [
-                    "-f docker/${imgName}.Dockerfile",
-                    "docker"
-                ].join(' ')
-            )
+            docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
+                // Hack to set custom docker registry for base image
+                sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
+                docker.build(
+                    "${imgName}:${timestamp}",
+                    [
+                        "-f docker/${imgName}.Dockerfile",
+                        "docker"
+                    ].join(' ')
+                )
+            }
 
             imgName.inside {
                 sh("pushd src/third_party; DIST=${OS} VERSION=${DIST_VERSION} python fetch_packages.py; popd")
