@@ -102,8 +102,8 @@ node('docker') {
             }
         }
 
-        sh("ln -s src/tools/build/SConstruct src/SConstruct")
-        sh("ln -s src/tools/packages/packages.make src/packages.make")
+        sh("test -e src/SConstruct || ln -s src/tools/build/SConstruct src/SConstruct")
+        sh("test -e src/packages.make || ln -s src/tools/packages/packages.make src/packages.make")
 
         if (BUILD_DPDK.toBoolean() == true) {
             sh("wget --no-check-certificate -O - ${art.url}/in-dpdk/dpdk-${DPDK_VERSION}.tar.xz | tar xJf -; mv dpdk-* dpdk")
