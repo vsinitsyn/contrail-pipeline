@@ -79,22 +79,34 @@ node('docker') {
     checkout scm
     git_commit['contrail-pipeline'] = common.getGitCommit()
 
-    for (component in components) {
-        dir("src/${component.value}") {
-            git url: "${SOURCE_URL}/${component.key}.git", branch: SOURCE_BRANCH, credentialsId: SOURCE_CREDENTIALS, poll: true, clean: true
-            git_commit[component.key] = common.getGitCommit()
+    stage("checkout") {
+        gitCheckoutSteps = [:]
+        for (component in components) {
+            gitCheckoutSteps[component.key] = common.gitCheckoutStep(
+                "src/${component.value}",
+                "${SOURCE_URL}/${component.key}.git",
+                SOURCE_BRANCH,
+                SOURCE_CREDENTIALS,
+                true,
+                true
+            )
         }
-    }
+        parallel gitCheckoutSteps
 
-    sh("cp src/tools/build/SConstruct src/")
-    sh("cp src/tools/packages/packages.make src/")
+        for (component in components) {
+            dir("src/${component.value}") {
+                commit = common.getGitCommit()
+                git_commit[component.key] = commit
+                properties["git_commit_"+component.key.replace('-', '_')] = commit
+            }
+        }
 
-    if (BUILD_DPDK.toBoolean() == true) {
-        sh("wget --no-check-certificate -O - ${art.url}/in-dpdk/dpdk-${DPDK_VERSION}.tar.xz | tar xJf -; mv dpdk-* dpdk")
-    }
+        sh("cp src/tools/build/SConstruct src/")
+        sh("cp src/tools/packages/packages.make src/")
 
-    for (component in git_commit) {
-        properties["git_commit_"+component.key.replace('-', '_')] = component.value
+        if (BUILD_DPDK.toBoolean() == true) {
+            sh("wget --no-check-certificate -O - ${art.url}/in-dpdk/dpdk-${DPDK_VERSION}.tar.xz | tar xJf -; mv dpdk-* dpdk")
+        }
     }
 
     // Check if image of this commit hash isn't already built
