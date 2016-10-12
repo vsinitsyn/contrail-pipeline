@@ -20,14 +20,18 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] || exit 0 \
 # Install requirements for Contrail build
 RUN apt-get update && apt-get install -y \
         build-essential \
-        autoconf \
-        automake \
-        python-dev \
-        python-setuptools \
-        python-lxml \
-        libxml2-utils \
-        scons \
-        unzip \
         vim-nox \
         wget \
+        scons \
+        libxml2-utils \
+        python-lxml \
+        autoconf \
+        automake \
+        libtool-bin \
+        patch \
+        unzip \
+        pkg-config \
+        javahelper \
+        ant \
+        python-setuptools \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

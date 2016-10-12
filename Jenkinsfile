@@ -55,6 +55,16 @@ def components = [
     ["contrail-webui-third-party", "contrail-webui-third-party", SOURCE_BRANCH]
 ]
 
+def sourcePackages = [
+    "contrail",
+    "contrail-web-core",
+    "contrail-web-controller",
+    "ifmap-server",
+    "neutron-plugin-contrail",
+    "ceilometer-plugin-contrail",
+    "contrail-heat"
+]
+
 def inRepos = [
     "generic": [
         "in-dockerhub"
@@ -77,6 +87,25 @@ def art = artifactory.connection(
 
 def git_commit = [:]
 def properties = [:]
+
+
+def buildSourcePackageStep(img, pkg) {
+    return {
+        img.inside {
+            sh("cd src; make -f packages.make ${pkg}")
+        }
+    }
+}
+
+def buildBinaryPackageStep(img, pkg, opts = '-b') {
+    return {
+        img.inside {
+            sh("dpkg-source -x src/build/packages/${pkg}*.dsc src/build/${pkg}")
+            sh("cd src/build/${pkg}; apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y")
+            sh("debuild -uc -us ${opts}")
+        }
+    }
+}
 
 node('docker') {
     checkout scm
@@ -151,17 +180,30 @@ node('docker') {
 
             img.inside {
                 sh("cd src/third_party; python fetch_packages.py")
-                sh("cd src; make -f packages.make source-all")
             }
+
+            buildSteps = [:]
+            for (pkg in sourcePackages) {
+                buildSteps[pkg] = buildSourcePackageStep(img, pkg)
+            }
+            parallel buildSteps
         }
-        stage("build-binary") {
-            def sourcePkgs = sh("ls src/build/build/packages/*.dsc").split('\n')
-            for (pkg in sourcePkgs) {
-                // TODO
-                img.inside {
-                    sh("dpkg-source -x ${pkg} src/build/")
-                    sh("cd src/build/; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install")
+
+        stage("build-binary-noarch") {
+            buildSteps = [:]
+            for (pkg in sourcePackages) {
+                buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-A')
+            }
+            parallel buildSteps
+        }
+
+        for (arch in ARCH.split(',')) {
+            stage("build-binary-${arch}") {
+                buildSteps = [:]
+                for (pkg in sourcePackages) {
+                    buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-B')
                 }
+                parallel buildSteps
             }
         }
     } catch (Exception e) {
