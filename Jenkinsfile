@@ -45,6 +45,7 @@ def components = [
     ["contrail-neutron-plugin", "openstack/neutron_plugin"],
     ["contrail-nova-extensions", "openstack/nova_extensions"],
     ["contrail-heat", "openstack/contrail-heat"],
+    ["contrail-ceilometer-plugin", "openstack/ceilometer_plugin"],
     ["contrail-web-storage", "contrail-web-storage"],
     ["contrail-web-server-manager", "contrail-web-server-manager"],
     ["contrail-web-controller", "contrail-web-controller"],
@@ -101,8 +102,8 @@ node('docker') {
             }
         }
 
-        sh("cp src/tools/build/SConstruct src/")
-        sh("cp src/tools/packages/packages.make src/")
+        sh("ln -s src/tools/build/SConstruct src/SConstruct")
+        sh("ln -s src/tools/packages/packages.make src/packages.make")
 
         if (BUILD_DPDK.toBoolean() == true) {
             sh("wget --no-check-certificate -O - ${art.url}/in-dpdk/dpdk-${DPDK_VERSION}.tar.xz | tar xJf -; mv dpdk-* dpdk")
@@ -130,7 +131,19 @@ node('docker') {
 
     try {
         stage("build") {
-            // TODO: build contrail
+            def imgName = "${OS}-${DIST}-${ARCH}"
+            docker.build(
+                "${imgName}:${timestamp}",
+                [
+                    "-f docker/${imgName}.Dockerfile",
+                    "docker"
+                ].join(' ')
+            )
+
+            imgName.inside {
+                sh("pushd src/third_party; DIST=${OS} VERSION=${DIST_VERSION} python fetch_packages.py; popd")
+                sh("pushd src; make -f packages.make source-all")
+            }
         }
     } catch (Exception e) {
         currentBuild.result = 'FAILURE'
