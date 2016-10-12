@@ -34,22 +34,22 @@ fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDEN
 def timestamp = common.getDatetime()
 
 def components = [
-    "contrail-build": "tools/build",
-    "contrail-controller": "controller",
-    "contrail-vrouter": "vrouter",
-    "contrail-third-party": "third_party",
-    "contrail-generateDS": "tools/generateds",
-    "contrail-sandesh": "tools/sandesh",
-    "contrail-packages": "tools/packages",
-    "contrail-nova-vif-driver": "openstack/nova_contrail_vif",
-    "contrail-neutron-plugin": "openstack/neutron_plugin",
-    "contrail-nova-extensions": "openstack/nova_extensions",
-    "contrail-heat": "openstack/contrail-heat",
-    "contrail-web-storage": "contrail-web-storage",
-    "contrail-web-server-manager": "contrail-web-server-manager",
-    "contrail-web-controller": "contrail-web-controller",
-    "contrail-web-core": "contrail-web-core",
-    "contrail-webui-third-party": "contrail-webui-third-party"
+    ["contrail-build", "tools/build"],
+    ["contrail-controller", "controller"],
+    ["contrail-vrouter", "vrouter"],
+    ["contrail-third-party", "third_party"],
+    ["contrail-generateDS", "tools/generateds"],
+    ["contrail-sandesh", "tools/sandesh"],
+    ["contrail-packages", "tools/packages"],
+    ["contrail-nova-vif-driver", "openstack/nova_contrail_vif"],
+    ["contrail-neutron-plugin", "openstack/neutron_plugin"],
+    ["contrail-nova-extensions", "openstack/nova_extensions"],
+    ["contrail-heat", "openstack/contrail-heat"],
+    ["contrail-web-storage", "contrail-web-storage"],
+    ["contrail-web-server-manager", "contrail-web-server-manager"],
+    ["contrail-web-controller", "contrail-web-controller"],
+    ["contrail-web-core", "contrail-web-core"],
+    ["contrail-webui-third-party", "contrail-webui-third-party"]
 ]
 
 def inRepos = [
@@ -82,9 +82,9 @@ node('docker') {
     stage("checkout") {
         gitCheckoutSteps = [:]
         for (component in components) {
-            gitCheckoutSteps[component.key] = common.gitCheckoutStep(
-                "src/${component.value}",
-                "${SOURCE_URL}/${component.key}.git",
+            gitCheckoutSteps[component[0]] = common.gitCheckoutStep(
+                "src/${component[1]}",
+                "${SOURCE_URL}/${component[0]}.git",
                 SOURCE_BRANCH,
                 SOURCE_CREDENTIALS,
                 true,
@@ -94,10 +94,10 @@ node('docker') {
         parallel gitCheckoutSteps
 
         for (component in components) {
-            dir("src/${component.value}") {
+            dir("src/${component[1]}") {
                 commit = common.getGitCommit()
-                git_commit[component.key] = commit
-                properties["git_commit_"+component.key.replace('-', '_')] = commit
+                git_commit[component[0]] = commit
+                properties["git_commit_"+component[0].replace('-', '_')] = commit
             }
         }
 
@@ -124,7 +124,7 @@ node('docker') {
 
     stage("prepare") {
         // Prepare Artifactory repositories
-        out = artifactory.createRepos(art, inRepos['common']+inRepos[OS], timestamp)
+        out = artifactory.createRepos(art, inRepos['generic']+inRepos[OS], timestamp)
         println "Created input repositories: ${out}"
     }
 
@@ -136,7 +136,7 @@ node('docker') {
         currentBuild.result = 'FAILURE'
         if (KEEP_REPOS.toBoolean() == false) {
             println "Build failed, cleaning up input repositories"
-            out = artifactory.deleteRepos(art, inRepos, timestamp)
+            out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
         }
         throw e
     }
