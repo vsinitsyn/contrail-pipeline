@@ -132,23 +132,36 @@ node('docker') {
     }
 
     try {
-        stage("build") {
-            def imgName = "${OS}-${DIST}-${ARCH}"
+        def imgName = "${OS}-${DIST}-${ARCH}"
+        def img
+        stage("build-source") {
             docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
                 // Hack to set custom docker registry for base image
                 sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
-                docker.build(
+                img = docker.build(
                     "${imgName}:${timestamp}",
                     [
+                        "--build-arg artifactory_url=${art.url}",
+                        "--build-arg timestamp=${timestamp}",
                         "-f docker/${imgName}.Dockerfile",
                         "docker"
                     ].join(' ')
                 )
             }
 
-            imgName.inside {
-                sh("pushd src/third_party; DIST=${OS} VERSION=${DIST_VERSION} python fetch_packages.py; popd")
-                sh("pushd src; make -f packages.make source-all")
+            img.inside {
+                sh("cd src/third_party; python fetch_packages.py")
+                sh("cd src; make -f packages.make source-all")
+            }
+        }
+        stage("build-binary") {
+            def sourcePkgs = sh("ls src/build/build/packages/*.dsc").split('\n')
+            for (pkg in sourcePkgs) {
+                // TODO
+                img.inside {
+                    sh("dpkg-source -x ${pkg} src/build/")
+                    sh("cd src/build/; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install")
+                }
             }
         }
     } catch (Exception e) {
