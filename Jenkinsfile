@@ -34,23 +34,23 @@ fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDEN
 def timestamp = common.getDatetime()
 
 def components = [
-    ["contrail-build", "tools/build"],
-    ["contrail-controller", "controller"],
-    ["contrail-vrouter", "vrouter"],
-    ["contrail-third-party", "third_party"],
-    ["contrail-generateDS", "tools/generateds"],
-    ["contrail-sandesh", "tools/sandesh"],
-    ["contrail-packages", "tools/packages"],
-    ["contrail-nova-vif-driver", "openstack/nova_contrail_vif"],
-    ["contrail-neutron-plugin", "openstack/neutron_plugin"],
-    ["contrail-nova-extensions", "openstack/nova_extensions"],
-    ["contrail-heat", "openstack/contrail-heat"],
-    ["contrail-ceilometer-plugin", "openstack/ceilometer_plugin"],
-    ["contrail-web-storage", "contrail-web-storage"],
-    ["contrail-web-server-manager", "contrail-web-server-manager"],
-    ["contrail-web-controller", "contrail-web-controller"],
-    ["contrail-web-core", "contrail-web-core"],
-    ["contrail-webui-third-party", "contrail-webui-third-party"]
+    ["contrail-build", "tools/build", SOURCE_BRANCH],
+    ["contrail-controller", "controller", SOURCE_BRANCH],
+    ["contrail-vrouter", "vrouter", SOURCE_BRANCH],
+    ["contrail-third-party", "third_party", SOURCE_BRANCH],
+    ["contrail-generateDS", "tools/generateds", SOURCE_BRANCH],
+    ["contrail-sandesh", "tools/sandesh", SOURCE_BRANCH],
+    ["contrail-packages", "tools/packages", SOURCE_BRANCH],
+    ["contrail-nova-vif-driver", "openstack/nova_contrail_vif", SOURCE_BRANCH],
+    ["contrail-neutron-plugin", "openstack/neutron_plugin", SOURCE_BRANCH],
+    ["contrail-nova-extensions", "openstack/nova_extensions", SOURCE_BRANCH],
+    ["contrail-heat", "openstack/contrail-heat", SOURCE_BRANCH],
+    ["contrail-ceilometer-plugin", "openstack/ceilometer_plugin", "master"],
+    ["contrail-web-storage", "contrail-web-storage", SOURCE_BRANCH],
+    ["contrail-web-server-manager", "contrail-web-server-manager", SOURCE_BRANCH],
+    ["contrail-web-controller", "contrail-web-controller", SOURCE_BRANCH],
+    ["contrail-web-core", "contrail-web-core", SOURCE_BRANCH],
+    ["contrail-webui-third-party", "contrail-webui-third-party", SOURCE_BRANCH]
 ]
 
 def inRepos = [
@@ -86,7 +86,7 @@ node('docker') {
             gitCheckoutSteps[component[0]] = common.gitCheckoutStep(
                 "src/${component[1]}",
                 "${SOURCE_URL}/${component[0]}.git",
-                SOURCE_BRANCH,
+                component[2],
                 SOURCE_CREDENTIALS,
                 true,
                 true
