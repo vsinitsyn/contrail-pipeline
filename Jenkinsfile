@@ -94,7 +94,7 @@ def properties = [:]
 def buildSourcePackageStep(img, pkg) {
     return {
         img.inside {
-            sh("cd src; make -f packages.make ${pkg}")
+            sh("cd src; make -f packages.make source-package-${pkg}")
         }
     }
 }
