@@ -22,6 +22,7 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] || exit 0 \
 # Install requirements for Contrail build
 RUN apt-get update && apt-get install -y \
         build-essential \
+        git \
         vim-nox \
         wget \
         scons \
