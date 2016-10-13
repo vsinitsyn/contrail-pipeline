@@ -71,10 +71,12 @@ def inRepos = [
     ],
     "debian": [
         "in-debian",
-        "in-debian-security"
+        "in-debian-security",
+        "in-tcpcloud-apt"
     ],
     "ubuntu": [
-        "in-ubuntu"
+        "in-ubuntu",
+        "in-tcpcloud-apt"
     ]
 ]
 
