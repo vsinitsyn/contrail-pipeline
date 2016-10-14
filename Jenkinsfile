@@ -188,13 +188,12 @@ node('docker') {
 	        sh("cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/")
             }
 
-            //buildSteps = [:]
+            buildSteps = [:]
             for (pkg in sourcePackages) {
-                buildSteps = [:]
                 buildSteps[pkg] = buildSourcePackageStep(img, pkg)
-                parallel buildSteps
             }
             //parallel buildSteps
+            common.serial(buildSteps)
         }
 
         stage("build-binary-noarch") {
