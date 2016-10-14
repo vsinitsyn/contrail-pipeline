@@ -21,6 +21,7 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] || exit 0 \
 
 # Install requirements for Contrail build
 RUN apt-get update && apt-get install -y \
+        linux-headers-3.16.0-4-all \
         build-essential \
         git \
         vim-nox \
@@ -43,4 +44,4 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -s /bin/bash --uid 1000 -m jenkins
 RUN echo "ALL    ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-ENV USER root
+ENV USER jenkins
