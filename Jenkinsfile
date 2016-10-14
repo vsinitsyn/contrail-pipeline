@@ -197,15 +197,15 @@ node('docker') {
             common.serial(buildSteps)
         }
 
-        for (arch in ARCH.split(',')) {
-            stage("build-binary-${arch}") {
-                buildSteps = [:]
-                for (pkg in sourcePackages) {
-                    buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
-                }
-                parallel buildSteps
+        //for (arch in ARCH.split(',')) {
+        stage("build-binary-${ARCH}") {
+            buildSteps = [:]
+            for (pkg in sourcePackages) {
+                buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
             }
+            parallel buildSteps
         }
+        //}
     } catch (Exception e) {
         currentBuild.result = 'FAILURE'
         if (KEEP_REPOS.toBoolean() == false) {
