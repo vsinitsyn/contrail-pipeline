@@ -216,7 +216,20 @@ node('docker') {
     }
 
     stage("upload") {
-        // TODO: Push to artifactory
+        buildSteps = [:]
+        new File('src/build').eachFile(FILES) {
+            if(it.name.endsWith('.deb')) {
+                buildSteps[it.name.split('_')[0]] = artifactory.uploadPackageStep(
+                    art,
+                    "src/build/${it.name}",
+                    properties,
+                    DIST,
+                    'main',
+                    timestamp
+                )
+            }
+        }
+        parallel buildSteps
     }
 }
 
