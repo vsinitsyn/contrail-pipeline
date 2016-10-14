@@ -105,7 +105,7 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
             sh("test -d src/build/${pkg} && rm -rf src/build/${pkg} || true")
             sh("dpkg-source -x src/build/packages/${pkg}_*.dsc src/build/${pkg}")
             sh("cd src/build/${pkg}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y")
-            sh("cd src/build/${pkg}; debuild -uc -us ${opts}")
+            sh("cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}")
         }
     }
 }
@@ -197,19 +197,11 @@ node('docker') {
             common.serial(buildSteps)
         }
 
-        stage("build-binary-noarch") {
-            buildSteps = [:]
-            for (pkg in sourcePackages) {
-                buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-A')
-            }
-            parallel buildSteps
-        }
-
         for (arch in ARCH.split(',')) {
             stage("build-binary-${arch}") {
                 buildSteps = [:]
                 for (pkg in sourcePackages) {
-                    buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-B')
+                    buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
                 }
                 parallel buildSteps
             }
