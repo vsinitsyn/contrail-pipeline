@@ -93,6 +93,11 @@ def properties = [:]
 
 def buildSourcePackageStep(img, pkg) {
     return {
+        if (pkg == 'contrail' || pkg == 'contrail-web-core') {
+            // XXX: Workaround to avoid this error:
+            //  tar: contrail-webui-third-party: file changed as we read it
+            sleep 120
+        }
         img.inside {
             sh("cd src; make -f packages.make source-package-${pkg}")
         }
