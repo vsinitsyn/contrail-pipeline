@@ -56,9 +56,9 @@ def components = [
 ]
 
 def sourcePackages = [
-    "contrail",
     "contrail-web-core",
     "contrail-web-controller",
+    "contrail",
     "ifmap-server",
     "neutron-plugin-contrail",
     "ceilometer-plugin-contrail",
@@ -93,11 +93,6 @@ def properties = [:]
 
 def buildSourcePackageStep(img, pkg) {
     return {
-        if (pkg == 'contrail' || pkg == 'contrail-web-core') {
-            // XXX: Workaround to avoid this error:
-            //  tar: contrail-webui-third-party: file changed as we read it
-            sleep 120
-        }
         img.inside {
             sh("cd src; make -f packages.make source-package-${pkg}")
         }
@@ -193,11 +188,13 @@ node('docker') {
 	        sh("cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/")
             }
 
-            buildSteps = [:]
+            //buildSteps = [:]
             for (pkg in sourcePackages) {
+                buildSteps = [:]
                 buildSteps[pkg] = buildSourcePackageStep(img, pkg)
+                parallel buildSteps
             }
-            parallel buildSteps
+            //parallel buildSteps
         }
 
         stage("build-binary-noarch") {
