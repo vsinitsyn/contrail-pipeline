@@ -103,7 +103,7 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
     return {
         img.inside {
             sh("dpkg-source -x src/build/packages/${pkg}*.dsc src/build/${pkg}")
-            sh("cd src/build/${pkg}; apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y")
+            sh("cd src/build/${pkg}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y")
             sh("debuild -uc -us ${opts}")
         }
     }
