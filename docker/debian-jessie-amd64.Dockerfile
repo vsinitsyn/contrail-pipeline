@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y \
         sudo \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN useradd -s /bin/bash --uid 1000 -m jenkins
 RUN echo "ALL    ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 ENV USER root
