@@ -212,6 +212,8 @@ node('docker') {
         if (KEEP_REPOS.toBoolean() == false) {
             println "Build failed, cleaning up input repositories"
             out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+            println "Cleaning up docker images"
+            sh("docker images | grep -E '[-:\\ ]+${timestamp}[\\.\\ /\$]+' | awk '{print \$3}' | xargs docker rmi -f || true")
         }
         throw e
     }
