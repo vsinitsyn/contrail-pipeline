@@ -15,6 +15,7 @@ help:
 	@echo "build-shell   Enter build env for given PACKAGE"
 	@echo "build-source  Build debian source packages"
 	@echo "build-binary  Build debian binary packages"
+	@echo "clean         Cleanup after previous builds"
 
 build-image:
 	docker build -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
@@ -27,6 +28,9 @@ build-shell:
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y; bash"
+
+clean:
+	rm -rf src/build
 
 build-source: \
 	fetch-third-party \
