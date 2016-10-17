@@ -29,6 +29,7 @@ build-shell:
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y; bash"
 
 build-source: \
+	fetch-third-party \
 	build-source-contrail-web-core \
 	build-source-contrail-web-controller \
 	build-source-contrail \
@@ -36,6 +37,8 @@ build-source: \
 	build-source-neutron-plugin-contrail \
 	build-source-ceilometer-plugin-contrail \
 	build-source-contrail-heat
+
+fetch-third-party:
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src/third_party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src/contrail-webui-third-party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py -f packages.xml
 	rm -rf src/contrail-web-core/node_modules
