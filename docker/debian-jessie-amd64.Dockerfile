@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y \
         javahelper \
         ant \
         python-setuptools \
+        python-nose \
         sudo \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
