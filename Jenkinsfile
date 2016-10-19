@@ -221,7 +221,8 @@ node('docker') {
 
     stage("upload") {
         buildSteps = [:]
-        for (file in common.getFiles("${WORKSPACE}/src/build", groovy.io.FileType.FILES)) {
+        cwd = new File(".").getAbsolutePath()
+        for (file in common.getFiles("${cwd}/src/build", groovy.io.FileType.FILES)) {
             if(it.name.endsWith('.deb')) {
                 buildSteps[it.name.split('_')[0]] = artifactory.uploadPackageStep(
                     art,
