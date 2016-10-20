@@ -221,19 +221,16 @@ node('docker') {
 
     stage("upload") {
         buildSteps = [:]
-        def workspace = sh script: 'pwd', returnStdout: true
-        workspace = workspace.trim()
-        for (file in common.getFiles("${workspace}/src/build", groovy.io.FileType.FILES)) {
-            if(it.name.endsWith('.deb')) {
-                buildSteps[it.name.split('_')[0]] = artifactory.uploadPackageStep(
-                    art,
-                    "src/build/${it.name}",
-                    properties,
-                    DIST,
-                    'main',
-                    timestamp
-                )
-            }
+        debFiles = sh script: "ls src/build/*.deb", returnStdout: true
+        for (file in debFiles.tokenize()) {
+            buildSteps[file.split('_')[0]] = artifactory.uploadPackageStep(
+                art,
+                "src/build/${file}",
+                properties,
+                DIST,
+                'main',
+                timestamp
+            )
         }
         parallel buildSteps
     }
