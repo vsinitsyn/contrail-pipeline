@@ -223,9 +223,9 @@ node('docker') {
         buildSteps = [:]
         debFiles = sh script: "ls src/build/*.deb", returnStdout: true
         for (file in debFiles.tokenize()) {
-            buildSteps[file.split('_')[0]] = artifactory.uploadPackageStep(
+            buildSteps[file.split('_')[0].split('/')[-1]] = artifactory.uploadPackageStep(
                 art,
-                "src/build/${file}",
+                file,
                 properties,
                 DIST,
                 'main',
