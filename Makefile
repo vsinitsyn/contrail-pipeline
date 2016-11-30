@@ -1,5 +1,5 @@
 SOURCE_BRANCH ?= "R3.0.2.x"
-GIT_CONTRAIL_BASE ?= "ssh://admin@ci.ccp-poc.cloudlab.cz:29418"
+GIT_CONTRAIL_BASE ?= ssh://admin@ci.ccp-poc.cloudlab.cz:29418
 CWD=$(shell pwd)
 
 OS   ?= debian
@@ -95,117 +95,117 @@ checkout-contrail-build:
 	$(eval component = contrail-build)
 	$(eval target = tools/build)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-controller:
 	$(eval component = contrail-controller)
 	$(eval target = controller)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-vrouter:
 	$(eval component = contrail-vrouter)
 	$(eval target = vrouter)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-third-party:
 	$(eval component = contrail-third-party)
 	$(eval target = third_party)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-generateDS:
 	$(eval component = contrail-generateDS)
 	$(eval target = tools/generateds)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-sandesh:
 	$(eval component = contrail-sandesh)
 	$(eval target = tools/sandesh)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-packages:
 	$(eval component = contrail-packages)
 	$(eval target = tools/packages)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-nova-vif-driver:
 	$(eval component = contrail-nova-vif-driver)
 	$(eval target = openstack/nova_contrail_vif)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-neutron-plugin:
 	$(eval component = contrail-neutron-plugin)
 	$(eval target = openstack/neutron_plugin)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-nova-extensions:
 	$(eval component = contrail-nova-extensions)
 	$(eval target = openstack/nova_extensions)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-heat:
 	$(eval component = contrail-heat)
 	$(eval target = openstack/contrail-heat)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-ceilometer-plugin:
 	$(eval component = contrail-ceilometer-plugin)
 	$(eval target = openstack/ceilometer_plugin)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/master -f)
 
 checkout-contrail-web-storage:
 	$(eval component = contrail-web-storage)
 	$(eval target = contrail-web-storage)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-web-server-manager:
 	$(eval component = contrail-web-server-manager)
 	$(eval target = contrail-web-server-manager)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-web-controller:
 	$(eval component = contrail-web-controller)
 	$(eval target = contrail-web-controller)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-web-core:
 	$(eval component = contrail-web-core)
 	$(eval target = contrail-web-core)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
 
 checkout-contrail-webui-third-party:
 	$(eval component = contrail-webui-third-party)
 	$(eval target = contrail-webui-third-party)
 	(test -d src/${target} || mkdir -p src/${target})
-	(cd src/${target} && git remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
+	(cd src/${target} && git --git-dir . remote | grep origin >/dev/null || (git init && git remote add origin $(GIT_CONTRAIL_BASE)/${component}.git))
 	(cd src/${target} && git fetch origin && git checkout -b $(SOURCE_BRANCH) origin/$(SOURCE_BRANCH) -f)
