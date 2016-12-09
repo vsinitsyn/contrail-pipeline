@@ -235,8 +235,7 @@ node('docker') {
                 properties,
                 DIST,
                 'main',
-                timestamp,
-                fh.bytes
+                timestamp
             )
         }
         parallel buildSteps
