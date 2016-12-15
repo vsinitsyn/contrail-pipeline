@@ -37,6 +37,7 @@ build-source: \
 	build-source-contrail-web-core \
 	build-source-contrail-web-controller \
 	build-source-contrail \
+	build-source-contrail-vrouter-dpdk \
 	build-source-ifmap-server \
 	build-source-neutron-plugin-contrail \
 	build-source-ceilometer-plugin-contrail \
@@ -58,6 +59,7 @@ build-binary: \
 	build-binary-contrail-web-core \
 	build-binary-contrail-web-controller \
 	build-binary-contrail \
+	build-binary-contrail-vrouter-dpdk \
 	build-binary-ifmap-server \
 	build-binary-neutron-plugin-contrail \
 	build-binary-ceilometer-plugin-contrail \
