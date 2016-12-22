@@ -37,6 +37,7 @@ fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDEN
 
 // Define global variables
 def timestamp = common.getDatetime()
+def version = SOURCE_BRANCH.replace('R', '') + "~${timestamp}"
 
 def components = [
     ["contrail-build", "tools/build", SOURCE_BRANCH],
@@ -102,11 +103,11 @@ def git_commit = [:]
 def properties = [:]
 
 
-def buildSourcePackageStep(img, pkg) {
+def buildSourcePackageStep(img, pkg, version) {
     return {
         sh("rm -f src/build/packages/${pkg}_* || true")
         img.inside {
-            sh("cd src; make -f packages.make source-package-${pkg}")
+            sh("cd src; VERSION='${version}' make -f packages.make source-package-${pkg}")
         }
     }
 }
@@ -222,7 +223,7 @@ node('docker') {
 
             buildSteps = [:]
             for (pkg in sourcePackages) {
-                buildSteps[pkg] = buildSourcePackageStep(img, pkg)
+                buildSteps[pkg] = buildSourcePackageStep(img, pkg, version)
             }
             //parallel buildSteps
             common.serial(buildSteps)
