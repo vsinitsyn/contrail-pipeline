@@ -84,8 +84,9 @@ def inRepos = [
     ]
 ]
 
+def art = null
 try {
-    def art = artifactory.connection(
+    art = artifactory.connection(
         ARTIFACTORY_URL,
         DOCKER_REGISTRY_SERVER,
         DOCKER_REGISTRY_SSL ?: true,
@@ -94,7 +95,7 @@ try {
         ARTIFACTORY_SERVER_NAME ?: "default"
     )
 } catch (MissingPropertyException e) {
-    def art = null
+    art = null
 }
 
 def git_commit = [:]
