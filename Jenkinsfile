@@ -9,6 +9,8 @@
  *                              artifactory plugin)
  *   DOCKER_REGISTRY_SERVER Docker server to use to push image
  *   DOCKER_REGISTRY_SSL    Docker registry is SSL-enabled if true
+ *   APTLY_URL              URL to Aptly instance
+ *   APTLY_REPO             Aptly repository to upload packages
  *   OS                     distribution name to build for (debian, ubuntu, etc.)
  *   DIST                   distribution version (jessie, trusty)
  *   ARCH                   comma-separated list of architectures to build
@@ -30,6 +32,7 @@ def common, artifactory
 fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDENTIALS_ID, '') {
     common = fileLoader.load("common");
     artifactory = fileLoader.load("artifactory");
+    aptly = fileLoader.load("aptly");
 }
 
 // Define global variables
@@ -81,14 +84,18 @@ def inRepos = [
     ]
 ]
 
-def art = artifactory.connection(
-    ARTIFACTORY_URL,
-    DOCKER_REGISTRY_SERVER,
-    DOCKER_REGISTRY_SSL ?: true,
-    ARTIFACTORY_OUT_REPO,
-    "artifactory",
-    ARTIFACTORY_SERVER_NAME ?: "default"
-)
+try {
+    def art = artifactory.connection(
+        ARTIFACTORY_URL,
+        DOCKER_REGISTRY_SERVER,
+        DOCKER_REGISTRY_SSL ?: true,
+        ARTIFACTORY_OUT_REPO,
+        "artifactory",
+        ARTIFACTORY_SERVER_NAME ?: "default"
+    )
+} catch (MissingPropertyException e) {
+    def art = null
+}
 
 def git_commit = [:]
 def properties = [:]
@@ -145,36 +152,51 @@ node('docker') {
         sh("test -d src/build && rm -rf src/build || true")
     }
 
-    // Check if image of this commit hash isn't already built
-    def results = artifactory.findArtifactByProperties(
-        art,
-        properties,
-        art.outRepo
-    )
-    if (results.size() > 0) {
-        println "There are already ${results.size} artefacts with same git commits"
-        if (FORCE_BUILD.toBoolean() == false) {
-            common.abortBuild()
+    if (art) {
+        // Check if image of this commit hash isn't already built
+        def results = artifactory.findArtifactByProperties(
+            art,
+            properties,
+            art.outRepo
+        )
+        if (results.size() > 0) {
+            println "There are already ${results.size} artefacts with same git commits"
+            if (FORCE_BUILD.toBoolean() == false) {
+                common.abortBuild()
+            }
         }
     }
 
-    stage("prepare") {
-        // Prepare Artifactory repositories
-        out = artifactory.createRepos(art, inRepos['generic']+inRepos[OS], timestamp)
-        println "Created input repositories: ${out}"
+    if (art) {
+        stage("prepare") {
+            // Prepare Artifactory repositories
+            out = artifactory.createRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+            println "Created input repositories: ${out}"
+        }
     }
 
     try {
         def imgName = "${OS}-${DIST}-${ARCH}"
         def img
         stage("build-source") {
-            docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
-                // Hack to set custom docker registry for base image
-                sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
+            if (art) {
+                docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
+                    // Hack to set custom docker registry for base image
+                    sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
+                    img = docker.build(
+                        "${imgName}:${timestamp}",
+                        [
+                            "--build-arg artifactory_url=${art.url}",
+                            "--build-arg timestamp=${timestamp}",
+                            "-f docker/${imgName}.Dockerfile",
+                            "docker"
+                        ].join(' ')
+                    )
+                }
+            } else {
                 img = docker.build(
                     "${imgName}:${timestamp}",
                     [
-                        "--build-arg artifactory_url=${art.url}",
                         "--build-arg timestamp=${timestamp}",
                         "-f docker/${imgName}.Dockerfile",
                         "docker"
@@ -210,8 +232,10 @@ node('docker') {
     } catch (Exception e) {
         currentBuild.result = 'FAILURE'
         if (KEEP_REPOS.toBoolean() == false) {
-            println "Build failed, cleaning up input repositories"
-            out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+            if (art) {
+                println "Build failed, cleaning up input repositories"
+                out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+            }
             println "Cleaning up docker images"
             sh("docker images | grep -E '[-:\\ ]+${timestamp}[\\.\\ /\$]+' | awk '{print \$3}' | xargs docker rmi -f || true")
         }
@@ -224,27 +248,30 @@ node('docker') {
         for (file in debFiles.tokenize()) {
             workspace = common.getWorkspace()
             def fh = new File("${workspace}/${file}".trim())
-            buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
-                art,
-                fh.name,
-                properties,
-                DIST,
-                'main',
-                timestamp
-            )
+            if (art) {
+                buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
+                    art,
+                    fh.name,
+                    properties,
+                    DIST,
+                    'main',
+                    timestamp
+                )
+            } else {
+                buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
+                    fh.name,
+                    APTLY_SERVER,
+                    APTLY_REPO
+                )
+            }
         }
         parallel buildSteps
     }
-}
 
-def promoteEnv = PROMOTE_ENV ? PROMOTE_ENV : "stable"
-
-timeout(time:1, unit:"DAYS") {
-    input "Promote to ${promoteEnv}?"
-}
-
-node('docker') {
-    stage("promote-${promoteEnv}") {
-        // TODO: promote
+    if (! art) {
+        stage("publish") {
+            aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
+            aptly.publish(APTLY_URL)
+        }
     }
 }
