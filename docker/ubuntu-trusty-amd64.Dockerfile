@@ -2,9 +2,11 @@ FROM ubuntu:trusty
 
 ARG artifactory_url
 ARG timestamp
+ARG uid=1000
 
 ENV ARTIFACTORY_URL $artifactory_url
 ENV TIMESTAMP $timestamp
+ENV JENKINS_UID $uid
 
 ## Configure APT mirror
 RUN [ "x${ARTIFACTORY_URL}" != "x" ] && ( \
@@ -48,7 +50,7 @@ RUN apt-get update && apt-get install -y \
         sudo \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN useradd -s /bin/bash --uid 1000 -m jenkins
+RUN useradd -s /bin/bash --uid $JENKINS_UID -m jenkins
 RUN echo "ALL    ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 ENV USER jenkins

@@ -177,6 +177,11 @@ node('docker') {
     }
 
     try {
+
+        def jenkinsUID = sh (
+            script: 'id -u',
+            returnStdout: true
+        ).trim()
         def imgName = "${OS}-${DIST}-${ARCH}"
         def img
         stage("build-source") {
@@ -187,6 +192,7 @@ node('docker') {
                     img = docker.build(
                         "${imgName}:${timestamp}",
                         [
+                            "--build-arg uid=${jenkinsUID}",
                             "--build-arg artifactory_url=${art.url}",
                             "--build-arg timestamp=${timestamp}",
                             "-f docker/${imgName}.Dockerfile",
@@ -198,6 +204,7 @@ node('docker') {
                 img = docker.build(
                     "${imgName}:${timestamp}",
                     [
+                        "--build-arg uid=${jenkinsUID}",
                         "--build-arg timestamp=${timestamp}",
                         "-f docker/${imgName}.Dockerfile",
                         "docker"
