@@ -28,7 +28,7 @@
  */
 
 // Load shared libs
-def common, artifactory
+def common, artifactory, aptly
 fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDENTIALS_ID, '') {
     common = fileLoader.load("common");
     artifactory = fileLoader.load("artifactory");
@@ -259,7 +259,7 @@ node('docker') {
             if (art) {
                 buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
                     art,
-                    fh.name,
+                    "src/build/${fh.name}",
                     properties,
                     DIST,
                     'main',
@@ -267,8 +267,8 @@ node('docker') {
                 )
             } else {
                 buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
-                    fh.name,
-                    APTLY_SERVER,
+                    "src/build/${fh.name}",
+                    APTLY_URL,
                     APTLY_REPO
                 )
             }
