@@ -270,7 +270,8 @@ node('docker') {
                 buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
                     "src/build/${fh.name}",
                     APTLY_URL,
-                    APTLY_REPO
+                    APTLY_REPO,
+                    true
                 )
             }
         }
