@@ -2,8 +2,8 @@ SOURCE_BRANCH ?= "R3.0.2.x"
 GIT_CONTRAIL_BASE ?= ssh://admin@ci.ccp-poc.cloudlab.cz:29418
 CWD=$(shell pwd)
 
-OS   ?= debian
-DIST ?= jessie
+OS   ?= ubuntu
+DIST ?= trusty
 ARCH ?= amd64
 
 all: checkout build-image build-source build-binary
@@ -15,6 +15,7 @@ help:
 	@echo "build-shell   Enter build env for given PACKAGE"
 	@echo "build-source  Build debian source packages"
 	@echo "build-binary  Build debian binary packages"
+	@echo "test          Run unit tests"
 	@echo "clean         Cleanup after previous builds"
 
 build-image:
@@ -31,6 +32,9 @@ build-shell:
 
 clean:
 	rm -rf src/build
+
+test: build-source
+	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src -e USER=jenkins --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "../scripts/run_tests.sh"
 
 build-source: \
 	fetch-third-party \
