@@ -227,6 +227,11 @@ node('docker') {
             }
             //parallel buildSteps
             common.serial(buildSteps)
+
+            archiveArtifacts artifacts: "src/build/packages/*.orig.tar.*"
+            archiveArtifacts artifacts: "src/build/packages/*.debian.tar.*"
+            archiveArtifacts artifacts: "src/build/packages/*.dsc"
+            archiveArtifacts artifacts: "src/build/packages/*.changes"
         }
 
         //for (arch in ARCH.split(',')) {
@@ -236,6 +241,7 @@ node('docker') {
                 buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
             }
             parallel buildSteps
+            archiveArtifacts artifacts: "src/build/*.deb"
         }
         //}
     } catch (Exception e) {
