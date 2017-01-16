@@ -1,10 +1,14 @@
 FROM debian:jessie
 
 ARG artifactory_url
+ARG extra_repo_url="deb http://apt-mk.mirantis.com/jessie/ nightly extra"
+ARG extra_repo_key_url="http://apt-mk.mirantis.com/public.gpg"
 ARG timestamp
 ARG uid=1000
 
 ENV ARTIFACTORY_URL $artifactory_url
+ENV EXTRA_REPO_URL $extra_repo_url
+ENV EXTRA_REPO_KEY_URL $extra_repo_key_url
 ENV TIMESTAMP $timestamp
 ENV JENKINS_UID $uid
 
@@ -18,20 +22,21 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] && ( \
         && echo "deb ${ARTIFACTORY_URL}/in-debian-${TIMESTAMP} jessie main" >/etc/apt/sources.list \
         && echo "deb ${ARTIFACTORY_URL}/in-debian-${TIMESTAMP} jessie-updates main" >>/etc/apt/sources.list \
         && echo "deb ${ARTIFACTORY_URL}/in-debian-security-${TIMESTAMP} jessie/updates main" >>/etc/apt/sources.list \
-        && wget -O - ${ARTIFACTORY_URL}/in-tcpcloud-apt-${TIMESTAMP}/public.gpg | apt-key add - \
-        && echo "deb ${ARTIFACTORY_URL}/in-tcpcloud-apt-${TIMESTAMP}/debian/ jessie extra" >>/etc/apt/sources.list \
+        && wget -O - ${ARTIFACTORY_URL}/in-mirantis-mk-${TIMESTAMP}/public.gpg | apt-key add - \
+        && echo "deb ${ARTIFACTORY_URL}/in-mirantis-mk-${TIMESTAMP}/jessie/ nightly extra" >>/etc/apt/sources.list \
     ) || ( \
         apt-get update \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https wget \
+        && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl \
         && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-        && wget -O - http://apt.tcpcloud.eu/public.gpg | apt-key add - \
-        && echo "deb http://apt.tcpcloud.eu/debian/ jessie extra" >>/etc/apt/sources.list \
+        && [ -z "${EXTRA_REPO_KEY_URL}" ] && [ "${EXTRA_REPO_KEY_URL}" != "null" ] || curl --insecure -ss -f "${EXTRA_REPO_KEY_URL}" | apt-key add - \
+        && [ -z "${EXTRA_REPO_URL}" ] && [ "${EXTRA_REPO_URL}" != "null" ] || echo "${EXTRA_REPO_URL}" >>/etc/apt/sources.list \
     )
 
 # Install requirements for Contrail build
 RUN apt-get update && apt-get install -y \
         linux-headers-3.16.0-4-all \
         build-essential \
+        equivs \
         git \
         vim-nox \
         wget \
