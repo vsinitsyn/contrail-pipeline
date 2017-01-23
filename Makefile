@@ -1,5 +1,5 @@
 SOURCE_BRANCH ?= "R3.0.2.x"
-GIT_CONTRAIL_BASE ?= ssh://admin@ci.ccp-poc.cloudlab.cz:29418
+GIT_CONTRAIL_BASE ?= https://github.com/Mirantis
 CWD=$(shell pwd)
 
 OS   ?= ubuntu
