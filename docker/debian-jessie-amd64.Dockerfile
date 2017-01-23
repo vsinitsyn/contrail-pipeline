@@ -54,9 +54,13 @@ RUN apt-get update && apt-get install -y \
         python-setuptools \
         python-nose \
         sudo \
+        eatmydata \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN useradd -s /bin/bash --uid $JENKINS_UID -m jenkins
 RUN echo "ALL    ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+ENV LD_LIBRARY_PATH /usr/lib/libeatmydata
+ENV LD_PRELOAD libeatmydata.so
 
 ENV USER jenkins
