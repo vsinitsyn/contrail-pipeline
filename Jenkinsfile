@@ -124,170 +124,178 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
 }
 
 node('docker') {
-    checkout scm
-    git_commit['contrail-pipeline'] = common.getGitCommit()
+    try{
+        checkout scm
+        git_commit['contrail-pipeline'] = common.getGitCommit()
 
-    stage("checkout") {
-        gitCheckoutSteps = [:]
-        for (component in components) {
-            gitCheckoutSteps[component[0]] = common.gitCheckoutStep(
-                "src/${component[1]}",
-                "${SOURCE_URL}/${component[0]}.git",
-                component[2],
-                SOURCE_CREDENTIALS,
-                true,
-                true
+        stage("checkout") {
+            gitCheckoutSteps = [:]
+            for (component in components) {
+                gitCheckoutSteps[component[0]] = common.gitCheckoutStep(
+                    "src/${component[1]}",
+                    "${SOURCE_URL}/${component[0]}.git",
+                    component[2],
+                    SOURCE_CREDENTIALS,
+                    true,
+                    true
+                )
+            }
+            parallel gitCheckoutSteps
+
+            for (component in components) {
+                dir("src/${component[1]}") {
+                    commit = common.getGitCommit()
+                    git_commit[component[0]] = commit
+                    properties["git_commit_"+component[0].replace('-', '_')] = commit
+                }
+            }
+
+            sh("test -e src/SConstruct || ln -s tools/build/SConstruct src/SConstruct")
+            sh("test -e src/packages.make || ln -s tools/packages/packages.make src/packages.make")
+            sh("test -d src/build && rm -rf src/build || true")
+        }
+
+        if (art) {
+            // Check if image of this commit hash isn't already built
+            def results = artifactory.findArtifactByProperties(
+                art,
+                properties,
+                art.outRepo
             )
-        }
-        parallel gitCheckoutSteps
-
-        for (component in components) {
-            dir("src/${component[1]}") {
-                commit = common.getGitCommit()
-                git_commit[component[0]] = commit
-                properties["git_commit_"+component[0].replace('-', '_')] = commit
+            if (results.size() > 0) {
+                println "There are already ${results.size} artefacts with same git commits"
+                if (FORCE_BUILD.toBoolean() == false) {
+                    common.abortBuild()
+                }
             }
         }
 
-        sh("test -e src/SConstruct || ln -s tools/build/SConstruct src/SConstruct")
-        sh("test -e src/packages.make || ln -s tools/packages/packages.make src/packages.make")
-        sh("test -d src/build && rm -rf src/build || true")
-    }
-
-    if (art) {
-        // Check if image of this commit hash isn't already built
-        def results = artifactory.findArtifactByProperties(
-            art,
-            properties,
-            art.outRepo
-        )
-        if (results.size() > 0) {
-            println "There are already ${results.size} artefacts with same git commits"
-            if (FORCE_BUILD.toBoolean() == false) {
-                common.abortBuild()
+        if (art) {
+            stage("prepare") {
+                // Prepare Artifactory repositories
+                out = artifactory.createRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+                println "Created input repositories: ${out}"
             }
         }
-    }
 
-    if (art) {
-        stage("prepare") {
-            // Prepare Artifactory repositories
-            out = artifactory.createRepos(art, inRepos['generic']+inRepos[OS], timestamp)
-            println "Created input repositories: ${out}"
-        }
-    }
+        try {
 
-    try {
-
-        def jenkinsUID = sh (
-            script: 'id -u',
-            returnStdout: true
-        ).trim()
-        def imgName = "${OS}-${DIST}-${ARCH}"
-        def img
-        stage("build-source") {
-            if (art) {
-                docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
-                    // Hack to set custom docker registry for base image
-                    sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
+            def jenkinsUID = sh (
+                script: 'id -u',
+                returnStdout: true
+            ).trim()
+            def imgName = "${OS}-${DIST}-${ARCH}"
+            def img
+            stage("build-source") {
+                if (art) {
+                    docker.withRegistry("${art.docker.proto}://in-dockerhub-${timestamp}.${art.docker.base}", "artifactory") {
+                        // Hack to set custom docker registry for base image
+                        sh "git checkout -f docker/${imgName}.Dockerfile; sed -i -e 's,^FROM ,FROM in-dockerhub-${timestamp}.${art.docker.base}/,g' docker/${imgName}.Dockerfile"
+                        img = docker.build(
+                            "${imgName}:${timestamp}",
+                            [
+                                "--build-arg uid=${jenkinsUID}",
+                                "--build-arg artifactory_url=${art.url}",
+                                "--build-arg timestamp=${timestamp}",
+                                "-f docker/${imgName}.Dockerfile",
+                                "docker"
+                            ].join(' ')
+                        )
+                    }
+                } else {
                     img = docker.build(
                         "${imgName}:${timestamp}",
                         [
                             "--build-arg uid=${jenkinsUID}",
-                            "--build-arg artifactory_url=${art.url}",
                             "--build-arg timestamp=${timestamp}",
                             "-f docker/${imgName}.Dockerfile",
                             "docker"
                         ].join(' ')
                     )
                 }
-            } else {
-                img = docker.build(
-                    "${imgName}:${timestamp}",
-                    [
-                        "--build-arg uid=${jenkinsUID}",
-                        "--build-arg timestamp=${timestamp}",
-                        "-f docker/${imgName}.Dockerfile",
-                        "docker"
-                    ].join(' ')
-                )
+
+                img.inside {
+                    sh("cd src/third_party; python fetch_packages.py")
+                    sh("cd src/contrail-webui-third-party; python fetch_packages.py -f packages.xml")
+    	        sh("rm -rf src/contrail-web-core/node_modules")
+            	sh("mkdir src/contrail-web-core/node_modules")
+    	        sh("cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/")
+                }
+
+                buildSteps = [:]
+                for (pkg in sourcePackages) {
+                    buildSteps[pkg] = buildSourcePackageStep(img, pkg, version)
+                }
+                //parallel buildSteps
+                common.serial(buildSteps)
+
+                archiveArtifacts artifacts: "src/build/packages/*.orig.tar.*"
+                archiveArtifacts artifacts: "src/build/packages/*.debian.tar.*"
+                archiveArtifacts artifacts: "src/build/packages/*.dsc"
+                archiveArtifacts artifacts: "src/build/packages/*.changes"
             }
 
-            img.inside {
-                sh("cd src/third_party; python fetch_packages.py")
-                sh("cd src/contrail-webui-third-party; python fetch_packages.py -f packages.xml")
-	        sh("rm -rf src/contrail-web-core/node_modules")
-        	sh("mkdir src/contrail-web-core/node_modules")
-	        sh("cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/")
+            //for (arch in ARCH.split(',')) {
+            stage("build-binary-${ARCH}") {
+                buildSteps = [:]
+                for (pkg in sourcePackages) {
+                    buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
+                }
+                parallel buildSteps
+                archiveArtifacts artifacts: "src/build/*.deb"
             }
-
-            buildSteps = [:]
-            for (pkg in sourcePackages) {
-                buildSteps[pkg] = buildSourcePackageStep(img, pkg, version)
+            //}
+        } catch (Exception e) {
+            currentBuild.result = 'FAILURE'
+            if (KEEP_REPOS.toBoolean() == false) {
+                if (art) {
+                    println "Build failed, cleaning up input repositories"
+                    out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
+                }
+                println "Cleaning up docker images"
+                sh("docker images | grep -E '[-:\\ ]+${timestamp}[\\.\\ /\$]+' | awk '{print \$3}' | xargs docker rmi -f || true")
             }
-            //parallel buildSteps
-            common.serial(buildSteps)
-
-            archiveArtifacts artifacts: "src/build/packages/*.orig.tar.*"
-            archiveArtifacts artifacts: "src/build/packages/*.debian.tar.*"
-            archiveArtifacts artifacts: "src/build/packages/*.dsc"
-            archiveArtifacts artifacts: "src/build/packages/*.changes"
+            throw e
         }
 
-        //for (arch in ARCH.split(',')) {
-        stage("build-binary-${ARCH}") {
+        stage("upload") {
             buildSteps = [:]
-            for (pkg in sourcePackages) {
-                buildSteps[pkg] = buildBinaryPackageStep(img, pkg, '-b')
+            debFiles = sh script: "ls src/build/*.deb", returnStdout: true
+            for (file in debFiles.tokenize()) {
+                workspace = common.getWorkspace()
+                def fh = new File("${workspace}/${file}".trim())
+                if (art) {
+                    buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
+                        art,
+                        "src/build/${fh.name}",
+                        properties,
+                        DIST,
+                        'main',
+                        timestamp
+                    )
+                } else {
+                    buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
+                        "src/build/${fh.name}",
+                        APTLY_URL,
+                        APTLY_REPO,
+                        true
+                    )
+                }
             }
             parallel buildSteps
-            archiveArtifacts artifacts: "src/build/*.deb"
         }
-        //}
-    } catch (Exception e) {
-        currentBuild.result = 'FAILURE'
-        if (KEEP_REPOS.toBoolean() == false) {
-            if (art) {
-                println "Build failed, cleaning up input repositories"
-                out = artifactory.deleteRepos(art, inRepos['generic']+inRepos[OS], timestamp)
-            }
-            println "Cleaning up docker images"
-            sh("docker images | grep -E '[-:\\ ]+${timestamp}[\\.\\ /\$]+' | awk '{print \$3}' | xargs docker rmi -f || true")
-        }
-        throw e
-    }
 
-    stage("upload") {
-        buildSteps = [:]
-        debFiles = sh script: "ls src/build/*.deb", returnStdout: true
-        for (file in debFiles.tokenize()) {
-            workspace = common.getWorkspace()
-            def fh = new File("${workspace}/${file}".trim())
-            if (art) {
-                buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
-                    art,
-                    "src/build/${fh.name}",
-                    properties,
-                    DIST,
-                    'main',
-                    timestamp
-                )
-            } else {
-                buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
-                    "src/build/${fh.name}",
-                    APTLY_URL,
-                    APTLY_REPO,
-                    true
-                )
+        if (! art) {
+            stage("publish") {
+                aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
+                aptly.publish(APTLY_URL)
             }
         }
-        parallel buildSteps
-    }
-
-    if (! art) {
-        stage("publish") {
-            aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
-            aptly.publish(APTLY_URL)
-        }
+    } catch (e) {
+       // If there was an exception thrown, the build failed
+       currentBuild.result = "FAILURE"
+       throw e
+    } finally {
+       common.sendNotification(currentBuild.result,"",["slack"])
     }
 }
