@@ -291,7 +291,7 @@ node('docker') {
                 aptly.publish(APTLY_URL)
             }
         }
-    } catch (e) {
+    } catch (Throwable e) {
        // If there was an exception thrown, the build failed
        currentBuild.result = "FAILURE"
        throw e
