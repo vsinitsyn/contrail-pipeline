@@ -36,6 +36,7 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] && ( \
 RUN apt-get update && apt-get install -y \
         linux-headers-3.16.0-4-all \
         build-essential \
+        dh-systemd \
         equivs \
         git \
         vim-nox \
