@@ -21,19 +21,12 @@
  *                          appended)
  *   SOURCE_BRANCH          Branch of opencontrail to build
  *   SOURCE_CREDENTIALS     Credentials to use to checkout source
- *   PIPELINE_LIBS_URL      URL to git repo with shared pipeline libs
- *   PIPELINE_LIBS_BRANCH   Branch of pipeline libs repo
- *   PIPELINE_LIBS_CREDENTIALS_ID   Credentials ID to use to access shared
- *                                  libs repo
  */
 
 // Load shared libs
-def common, artifactory, aptly
-fileLoader.withGit(PIPELINE_LIBS_URL, PIPELINE_LIBS_BRANCH, PIPELINE_LIBS_CREDENTIALS_ID, '') {
-    common = fileLoader.load("common");
-    artifactory = fileLoader.load("artifactory");
-    aptly = fileLoader.load("aptly");
-}
+def common = new com.mirantis.mk.Common()
+def artifactory = new com.mirantis.mk.Artifactory()
+def aptly = new com.mirantis.mk.Aptly()
 
 // Define global variables
 def timestamp = common.getDatetime()
