@@ -25,6 +25,7 @@
 
 // Load shared libs
 def common = new com.mirantis.mk.Common()
+def git = new com.mirantis.mk.Git()
 def artifactory = new com.mirantis.mk.Artifactory()
 def aptly = new com.mirantis.mk.Aptly()
 
@@ -124,7 +125,7 @@ node('docker') {
         stage("checkout") {
             gitCheckoutSteps = [:]
             for (component in components) {
-                gitCheckoutSteps[component[0]] = common.gitCheckoutStep(
+                gitCheckoutSteps[component[0]] = git.checkoutGitRepository(
                     "src/${component[1]}",
                     "${SOURCE_URL}/${component[0]}.git",
                     component[2],
@@ -137,7 +138,7 @@ node('docker') {
 
             for (component in components) {
                 dir("src/${component[1]}") {
-                    commit = common.getGitCommit()
+                    commit = git.getGitCommit()
                     git_commit[component[0]] = commit
                     properties["git_commit_"+component[0].replace('-', '_')] = commit
                 }
