@@ -54,6 +54,9 @@ RUN apt-get update && apt-get install -y \
         python-setuptools \
         python-nose \
         sudo \
+        nodejs-legacy \
+        npm \
+        dh-systemd \
         eatmydata \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
