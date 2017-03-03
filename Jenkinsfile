@@ -120,12 +120,12 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
 node('docker') {
     try{
         checkout scm
-        git_commit['contrail-pipeline'] = common.getGitCommit()
+        git_commit['contrail-pipeline'] = git.getGitCommit()
 
         stage("checkout") {
             gitCheckoutSteps = [:]
             for (component in components) {
-                gitCheckoutSteps[component[0]] = git.checkoutGitRepository(
+                gitCheckoutSteps[component[0]] = git.checkoutGitParallel(
                     "src/${component[1]}",
                     "${SOURCE_URL}/${component[0]}.git",
                     component[2],
