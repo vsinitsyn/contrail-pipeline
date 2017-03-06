@@ -125,14 +125,16 @@ node('docker') {
         stage("checkout") {
             gitCheckoutSteps = [:]
             for (component in components) {
-                gitCheckoutSteps[component[0]] = git.checkoutGitParallel(
-                    "src/${component[1]}",
-                    "${SOURCE_URL}/${component[0]}.git",
-                    component[2],
-                    SOURCE_CREDENTIALS,
-                    true,
-                    true
-                )
+                gitCheckoutSteps[component[0]] = {
+                    git.checkoutGitRepository(
+                        "src/${component[1]}",
+                        "${SOURCE_URL}/${component[0]}.git",
+                        component[2],
+                        SOURCE_CREDENTIALS,
+                        true,
+                        20
+                    )
+                }
             }
             parallel gitCheckoutSteps
 
