@@ -123,9 +123,7 @@ node('docker') {
         git_commit['contrail-pipeline'] = git.getGitCommit()
 
         stage("checkout") {
-            gitCheckoutSteps = [:]
             for (component in components) {
-                gitCheckoutSteps[component[0]] = {
                     git.checkoutGitRepository(
                         "src/${component[1]}",
                         "${SOURCE_URL}/${component[0]}.git",
@@ -134,9 +132,7 @@ node('docker') {
                         true,
                         20
                     )
-                }
             }
-            parallel gitCheckoutSteps
 
             for (component in components) {
                 dir("src/${component[1]}") {
