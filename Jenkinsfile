@@ -130,7 +130,7 @@ node('docker') {
                         component[2],
                         SOURCE_CREDENTIALS,
                         true,
-                        20
+                        30
                     )
             }
 
