@@ -122,6 +122,10 @@ node('docker') {
         checkout scm
         git_commit['contrail-pipeline'] = git.getGitCommit()
 
+        stage("cleanup") {
+            sh("rm -rf src || true")
+        }
+
         stage("checkout") {
             for (component in components) {
                     git.checkoutGitRepository(
