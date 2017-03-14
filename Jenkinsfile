@@ -28,6 +28,7 @@ def common = new com.mirantis.mk.Common()
 def git = new com.mirantis.mk.Git()
 def artifactory = new com.mirantis.mk.Artifactory()
 def aptly = new com.mirantis.mk.Aptly()
+def debian = new com.mirantis.mk.Debian()
 
 // Define global variables
 def timestamp = common.getDatetime()
@@ -286,6 +287,12 @@ node('docker') {
             stage("publish") {
                 aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
                 aptly.publish(APTLY_URL)
+            }
+        }
+        if (UPLOAD_SOURCE_PACKAGE) {
+            stage("upload launchpad") {
+                debian.importGpgKey("launchpad-private")
+                debian.uploadPpa(${PPA}, "src/build/packages", "launchpad-private")
             }
         }
     } catch (Throwable e) {
