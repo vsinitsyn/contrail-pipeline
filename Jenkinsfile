@@ -292,7 +292,7 @@ node('docker') {
         if (UPLOAD_SOURCE_PACKAGE) {
             stage("upload launchpad") {
                 debian.importGpgKey("launchpad-private")
-                debian.uploadPpa(${PPA}, "src/build/packages", "launchpad-private")
+                debian.uploadPpa(PPA, "src/build/packages", "launchpad-private")
             }
         }
     } catch (Throwable e) {
@@ -301,5 +301,6 @@ node('docker') {
        throw e
     } finally {
        common.sendNotification(currentBuild.result,"",["slack"])
+       sh("rm -rf .gnupg || true")
     }
 }
