@@ -57,6 +57,7 @@ RUN apt-get update && apt-get install -y \
         nodejs-legacy \
         npm \
         dh-systemd \
+        devscripts \
         eatmydata \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
