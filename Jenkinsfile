@@ -301,6 +301,9 @@ node('docker') {
        throw e
     } finally {
        common.sendNotification(currentBuild.result,"",["slack"])
-       sh("rm -rf .gnupg || true")
+
+       if (currentBuild.result != 'FAILURE') {
+          sh("rm -rf src")
+       }
     }
 }
