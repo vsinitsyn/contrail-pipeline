@@ -34,6 +34,13 @@ def debian = new com.mirantis.mk.Debian()
 def timestamp = common.getDatetime()
 def version = SOURCE_BRANCH.replace('R', '') + "~${timestamp}"
 
+def debugDpdk
+try {
+  debugDpdk = DEBUG_DPDK
+} catch (MissingPropertyException e) {
+  debugDpdk = false
+}
+
 def components = [
     ["contrail-build", "tools/build", SOURCE_BRANCH],
     ["contrail-controller", "controller", SOURCE_BRANCH],
@@ -215,6 +222,9 @@ node('docker') {
                 img.inside {
                     sh("cd src/third_party; python fetch_packages.py")
                     sh("cd src/contrail-webui-third-party; python fetch_packages.py -f packages.xml")
+                    if (debugDpdk) {
+                        sh("cd src/third_party; patch -p1 < dpdk-debug.diff")
+                    }
     	        sh("rm -rf src/contrail-web-core/node_modules")
             	sh("mkdir src/contrail-web-core/node_modules")
     	        sh("cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/")
