@@ -36,7 +36,7 @@ def version = SOURCE_BRANCH.replace('R', '') + "~${timestamp}"
 
 def debugDpdk
 try {
-  debugDpdk = DEBUG_DPDK
+  debugDpdk = DEBUG_DPDK.toBoolean()
 } catch (MissingPropertyException e) {
   debugDpdk = false
 }
@@ -299,7 +299,7 @@ node('docker') {
                 aptly.publish(APTLY_URL)
             }
         }
-        if (UPLOAD_SOURCE_PACKAGE) {
+        if (UPLOAD_SOURCE_PACKAGE.toBoolean() == true) {
             stage("upload launchpad") {
                 debian.importGpgKey("launchpad-private")
                 debian.uploadPpa(PPA, "src/build/packages", "launchpad-private")
