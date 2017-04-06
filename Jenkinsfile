@@ -30,16 +30,16 @@ def artifactory = new com.mirantis.mk.Artifactory()
 def aptly = new com.mirantis.mk.Aptly()
 def debian = new com.mirantis.mk.Debian()
 
+def gerritProject
+try {
+  gerritProject = GERRIT_PROJECT
+} catch (MissingPropertyException e) {
+  gerritProject = ""
+}
+
 // Define global variables
 def timestamp = common.getDatetime()
 def version = SOURCE_BRANCH.replace('R', '') + "~${timestamp}"
-
-def debugDpdk
-try {
-  debugDpdk = DEBUG_DPDK.toBoolean()
-} catch (MissingPropertyException e) {
-  debugDpdk = false
-}
 
 def components = [
     ["contrail-build", "tools/build", SOURCE_BRANCH],
@@ -136,22 +136,32 @@ node('docker') {
 
         stage("checkout") {
             for (component in components) {
-                    git.checkoutGitRepository(
-                        "src/${component[1]}",
-                        "${SOURCE_URL}/${component[0]}.git",
-                        component[2],
-                        SOURCE_CREDENTIALS,
-                        true,
-                        30,
-                        1
-                    )
+                if ("contrail/${component[0]}" == gerritProject) {
+                        gerrit.gerritPatchsetCheckout ([
+                            path: "src/" + component[1],
+                            credentialsId : SOURCE_CREDENTIALS,
+                            depth : 1
+                        ])
+                    } else {
+                        git.checkoutGitRepository(
+                            "src/${component[1]}",
+                            "${SOURCE_URL}/${component[0]}.git",
+                            component[2],
+                            SOURCE_CREDENTIALS,
+                            true,
+                            30,
+                            1
+                        )
+                    }
             }
 
             for (component in components) {
-                dir("src/${component[1]}") {
-                    commit = git.getGitCommit()
-                    git_commit[component[0]] = commit
-                    properties["git_commit_"+component[0].replace('-', '_')] = commit
+                if ("contrail/${component[0]}" != gerritProject) {
+                    dir("src/${component[1]}") {
+                        commit = git.getGitCommit()
+                        git_commit[component[0]] = commit
+                        properties["git_commit_"+component[0].replace('-', '_')] = commit
+                    }
                 }
             }
 
@@ -222,7 +232,7 @@ node('docker') {
                 img.inside {
                     sh("cd src/third_party; python fetch_packages.py")
                     sh("cd src/contrail-webui-third-party; python fetch_packages.py -f packages.xml")
-                    if (debugDpdk) {
+                    if (DEBUG_DPDK.toBoolean()) {
                         sh("cd src/third_party; patch -p1 < dpdk-debug.diff")
                     }
     	        sh("rm -rf src/contrail-web-core/node_modules")
@@ -266,43 +276,46 @@ node('docker') {
             throw e
         }
 
-        stage("upload") {
-            buildSteps = [:]
-            debFiles = sh script: "ls src/build/*.deb", returnStdout: true
-            for (file in debFiles.tokenize()) {
-                workspace = common.getWorkspace()
-                def fh = new File("${workspace}/${file}".trim())
-                if (art) {
-                    buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
-                        art,
-                        "src/build/${fh.name}",
-                        properties,
-                        DIST,
-                        'main',
-                        timestamp
-                    )
-                } else {
-                    buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
-                        "src/build/${fh.name}",
-                        APTLY_URL,
-                        APTLY_REPO,
-                        true
-                    )
+        // Upload and publish only if the build is from merged content and not from a gerrit patch
+        if (gerritProject == "") {
+            stage("upload") {
+                buildSteps = [:]
+                debFiles = sh script: "ls src/build/*.deb", returnStdout: true
+                for (file in debFiles.tokenize()) {
+                    workspace = common.getWorkspace()
+                    def fh = new File("${workspace}/${file}".trim())
+                    if (art) {
+                        buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
+                            art,
+                            "src/build/${fh.name}",
+                            properties,
+                            DIST,
+                            'main',
+                            timestamp
+                        )
+                    } else {
+                        buildSteps[fh.name.split('_')[0]] = aptly.uploadPackageStep(
+                            "src/build/${fh.name}",
+                            APTLY_URL,
+                            APTLY_REPO,
+                            true
+                        )
+                    }
+                }
+                parallel buildSteps
+            }
+
+            if (! art) {
+                stage("publish") {
+                    aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
+                    aptly.publish(APTLY_URL)
                 }
             }
-            parallel buildSteps
-        }
-
-        if (! art) {
-            stage("publish") {
-                aptly.snapshotRepo(APTLY_URL, APTLY_REPO, timestamp)
-                aptly.publish(APTLY_URL)
-            }
-        }
-        if (UPLOAD_SOURCE_PACKAGE.toBoolean() == true) {
-            stage("upload launchpad") {
-                debian.importGpgKey("launchpad-private")
-                debian.uploadPpa(PPA, "src/build/packages", "launchpad-private")
+            if (UPLOAD_SOURCE_PACKAGE.toBoolean() == true) {
+                stage("upload launchpad") {
+                    debian.importGpgKey("launchpad-private")
+                    debian.uploadPpa(PPA, "src/build/packages", "launchpad-private")
+                }
             }
         }
     } catch (Throwable e) {
