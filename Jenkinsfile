@@ -26,6 +26,7 @@
 // Load shared libs
 def common = new com.mirantis.mk.Common()
 def git = new com.mirantis.mk.Git()
+def gerrit = new com.mirantis.mk.Gerrit()
 def artifactory = new com.mirantis.mk.Artifactory()
 def aptly = new com.mirantis.mk.Aptly()
 def debian = new com.mirantis.mk.Debian()
