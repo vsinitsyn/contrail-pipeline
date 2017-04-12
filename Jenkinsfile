@@ -233,7 +233,7 @@ node('docker') {
                 img.inside {
                     sh("cd src/third_party; python fetch_packages.py")
                     sh("cd src/contrail-webui-third-party; python fetch_packages.py -f packages.xml")
-                    if (DEBUG_DPDK.toBoolean()) {
+                    if (gerritProject != "" || DEBUG_DPDK.toBoolean()) {
                         sh("cd src/third_party; patch -p1 < dpdk-debug.diff")
                     }
     	        sh("rm -rf src/contrail-web-core/node_modules")
