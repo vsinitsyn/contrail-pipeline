@@ -77,6 +77,6 @@ build-binary-%:
 		cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}"
 
 checkout:
-	mr --trust-all -j4 --force update
+	SOURCE_BRANCH=${SOURCE_BRANCH} GIT_CONTRAIL_BASE=${GIT_CONTRAIL_BASE} mr --trust-all -j4 --force update
 	(test -e src/SConstruct || ln -s tools/build/SConstruct src/SConstruct)
 	(test -e src/packages.make || ln -s tools/packages/packages.make src/packages.make)
