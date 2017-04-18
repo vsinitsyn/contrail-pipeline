@@ -74,7 +74,7 @@ build-binary-%:
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,([^)]*),,g'|xargs sudo apt-get install -y; \
-		cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}"
+		cd src/build/${PACKAGE}; debuild --no-lintian -uc -us ${opts}"
 
 checkout:
 	SOURCE_BRANCH=${SOURCE_BRANCH} GIT_CONTRAIL_BASE=${GIT_CONTRAIL_BASE} mr --trust-all -j4 --force update
