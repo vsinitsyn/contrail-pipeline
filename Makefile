@@ -26,7 +26,9 @@ shell:
 
 build-shell:
 	$(eval PACKAGE ?= contrail)
+ifneq ($(KEEP_PACKAGE),yes)
 	(rm -rf src/build/${PACKAGE} || true)
+endif
 	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,([^)]*),,g'|xargs sudo apt-get install -y; bash"
 
