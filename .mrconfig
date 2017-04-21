@@ -4,7 +4,8 @@ lib =
 		echo "I: $1"
 	}
 	git_checkout() {
-		(git clone -b $3 $GIT_CONTRAIL_BASE/$1.git $2 || git clone -b $3 $GIT_CONTRAIL_BASE/$1.git $2)
+		git clone -b ${3:-master} \
+			${GIT_CONTRAIL_BASE:-https://github.com/Mirantis}/$1.git $2
 	}
 update = git pull --rebase
 git_review = git review
@@ -55,7 +56,7 @@ checkout = git_checkout contrail-heat contrail-heat $SOURCE_BRANCH
 
 [src/openstack/ceilometer_plugin]
 skip = lazy
-checkout = git_checkout contrail-ceilometer-plugin ceilometer_plugin master
+checkout = git_checkout contrail-ceilometer-plugin ceilometer_plugin $SOURCE_BRANCH
 
 [src/contrail-web-storage]
 skip = lazy
